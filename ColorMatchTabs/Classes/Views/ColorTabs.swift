@@ -28,14 +28,17 @@ open class ColorTabs: UIControl {
     open weak var dataSource: ColorTabsDataSource?
     
     /// Text color for titles.
-    open var titleTextColor: UIColor = .white
+    open var titleTextColor: UIColor = .black
     
     /// Font for titles.
-    open var titleFont: UIFont = .systemFont(ofSize: 14)
+    open var titleFont: UIFont = .systemFont(ofSize: 12)
     
     fileprivate let stackView = UIStackView()
     fileprivate var buttons: [UIButton] = []
     fileprivate var labels: [UILabel] = []
+    fileprivate var lViews: [UIView] = []
+    fileprivate var rViews: [UIView] = []
+
     fileprivate(set) lazy var highlighterView: UIView = {
         let frame = CGRect(origin: CGPoint.zero, size: CGSize(width: 0, height: self.bounds.height))
         let highlighterView = UIView(frame: frame)
@@ -137,15 +140,36 @@ open class ColorTabs: UIControl {
         
         buttons = []
         labels = []
+        rViews = []
+        lViews = []
+
         let count = dataSource.numberOfItems(inTabSwitcher: self)
         for index in 0..<count {
-            let button = createButton(forIndex: index, withDataSource: dataSource)
-            buttons.append(button)
-            stackView.addArrangedSubview(button)
+            let verticalStackView = UIStackView()
+            verticalStackView.axis = .vertical
             
+            let button = createButton(forIndex: index, withDataSource: dataSource)
+            verticalStackView.addArrangedSubview(button)
+
             let label = createLabel(forIndex: index, withDataSource: dataSource)
+            button.accessibilityLabel = label.text
+            label.isAccessibilityElement = false
+            buttons.append(button)
             labels.append(label)
-            stackView.addArrangedSubview(label)
+            
+            let viewR = createView(forIndex: index, withDataSource: dataSource)
+            rViews.append(viewR)
+            let viewL = createView(forIndex: index, withDataSource: dataSource)
+            lViews.append(viewL)
+            label.widthAnchor.constraint(equalToConstant: 90).isActive = true
+            verticalStackView.addArrangedSubview(label)
+            viewL.widthAnchor.constraint(equalToConstant: 20).isActive = true
+            stackView.addArrangedSubview(viewL)
+            stackView.addArrangedSubview(verticalStackView)
+            viewR.widthAnchor.constraint(equalToConstant: 20).isActive = true
+            stackView.addArrangedSubview(viewR)
+
+
         }
     }
     
@@ -156,7 +180,7 @@ private extension ColorTabs {
     
     func commonInit() {
         addSubview(stackView)
-        stackView.distribution = .fillEqually
+        stackView.distribution = .equalCentering
     }
     
     func createButton(forIndex index: Int, withDataSource dataSource: ColorTabsDataSource) -> UIButton {
@@ -171,15 +195,21 @@ private extension ColorTabs {
     
     func createLabel(forIndex index: Int, withDataSource dataSource: ColorTabsDataSource) -> UILabel {
         let label = UILabel()
-        
         label.isHidden = true
-        label.textAlignment = .left
+        label.textAlignment = .center
         label.text = dataSource.tabSwitcher(self, titleAt: index)
         label.textColor = titleTextColor
-        label.adjustsFontSizeToFitWidth = true
+        label.adjustsFontSizeToFitWidth = false
         label.font = titleFont
+
         
         return label
+    }
+    func createView(forIndex index: Int, withDataSource dataSource: ColorTabsDataSource) -> UIView {
+        let new = UIView()
+        new.isHidden = true
+        new.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
+        return new
     }
     
 }
@@ -195,6 +225,10 @@ private extension ColorTabs {
     func transition(from fromIndex: Int, to toIndex: Int) {
         guard let fromLabel = labels[safe: fromIndex],
             let fromIcon = buttons[safe: fromIndex],
+            let fromLView = lViews[safe: fromIndex],
+            let toLView = lViews[safe: toIndex],
+            let fromRView = rViews[safe: fromIndex],
+            let toRView = rViews[safe: toIndex],
             let toLabel = labels[safe: toIndex],
             let toIcon = buttons[safe: toIndex] else {
                 return
@@ -204,10 +238,17 @@ private extension ColorTabs {
             fromLabel.isHidden = true
             fromLabel.alpha = 0
             fromIcon.isSelected = false
+      
+            fromLView.isHidden = true
+            fromRView.isHidden = true
             
+            toLView.isHidden = false
+            toRView.isHidden = false
+
             toLabel.isHidden = false
             toLabel.alpha = 1
             toIcon.isSelected = true
+            toIcon.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
             
             self.stackView.layoutIfNeeded()
             self.layoutIfNeeded()
@@ -242,7 +283,7 @@ private extension ColorTabs {
         let offsetForLastItem: CGFloat = toIndex == countItems - 1 ? HighlighterViewOffScreenOffset : 0
         highlighterView.frame.size.width = toLabel.bounds.width + (toLabel.frame.origin.x - toIcon.frame.origin.x) + 10 - offsetForFirstItem + offsetForLastItem
         
-        highlighterView.backgroundColor = dataSource!.tabSwitcher(self, tintColorAt: toIndex)
+        highlighterView.backgroundColor = UIColor.white
     }
     
 }
