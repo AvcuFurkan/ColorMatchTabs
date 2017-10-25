@@ -23,14 +23,14 @@ public protocol ColorMatchTabsViewControllerDataSource: class {
 
 open class ColorMatchTabsViewController: UITabBarController {
     
-    @IBInspectable open weak var dataSource: ColorMatchTabsViewControllerDataSource? {
+    open weak var dataSource: ColorMatchTabsViewControllerDataSource? {
         didSet {
             _view.scrollMenu.dataSource = dataSource == nil ? nil : self
             _view.tabs.dataSource = dataSource == nil ? nil : self
         }
     }
     
-    @IBInspectable open var scrollEnabled = true {
+    open var scrollEnabled = true {
         didSet {
             updateScrollEnabled()
         }
